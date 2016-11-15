@@ -26,6 +26,19 @@
                     </execution>
 
                     <execution>
+                        <id>ant-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>
+                                <argument>checkintest</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>ant-clean</id>
                         <phase>clean</phase>
                         <goals>
