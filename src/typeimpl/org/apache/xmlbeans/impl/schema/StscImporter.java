@@ -15,45 +15,44 @@
 
 package org.apache.xmlbeans.impl.schema;
 
-import org.apache.xmlbeans.impl.xb.xsdschema.RedefineDocument.Redefine;
-import org.apache.xmlbeans.impl.xb.xsdschema.SchemaDocument.Schema;
-import org.apache.xmlbeans.impl.xb.xsdschema.SchemaDocument;
-import org.apache.xmlbeans.impl.xb.xsdschema.ImportDocument.Import;
-import org.apache.xmlbeans.impl.xb.xsdschema.IncludeDocument.Include;
-
-import java.util.Map;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Set;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Arrays;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.MalformedURLException;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.InputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.CharArrayReader;
-import java.io.Writer;
 import java.io.CharArrayWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import org.apache.xmlbeans.XmlObject;
-import org.apache.xmlbeans.XmlException;
-import org.apache.xmlbeans.XmlOptions;
 import org.apache.xmlbeans.SchemaTypeLoader;
 import org.apache.xmlbeans.XmlErrorCodes;
+import org.apache.xmlbeans.XmlException;
+import org.apache.xmlbeans.XmlObject;
+import org.apache.xmlbeans.XmlOptions;
 import org.apache.xmlbeans.impl.common.IOUtil;
 import org.apache.xmlbeans.impl.common.XmlEncodingSniffer;
+import org.apache.xmlbeans.impl.xb.xsdschema.ImportDocument.Import;
+import org.apache.xmlbeans.impl.xb.xsdschema.IncludeDocument.Include;
+import org.apache.xmlbeans.impl.xb.xsdschema.RedefineDocument.Redefine;
+import org.apache.xmlbeans.impl.xb.xsdschema.SchemaDocument;
+import org.apache.xmlbeans.impl.xb.xsdschema.SchemaDocument.Schema;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -97,7 +96,7 @@ public class StscImporter
         {
             return schema.documentProperties().getSourceName();
         }
-        
+
         /**
          * The chameleon namespace. Null if this schema is not being treated
          * as a chameleon. (The ordinary targetNamespace will just be extracted
@@ -184,7 +183,7 @@ public class StscImporter
         }
 
         private static void addIndirectIncludesHelper(SchemaToProcess including,
-            SchemaToProcess schemaToProcess)
+                                                      SchemaToProcess schemaToProcess)
         {
             if (schemaToProcess.indirectIncludes != null)
                 for (Iterator it = schemaToProcess.indirectIncludes.iterator(); it.hasNext();)
@@ -253,13 +252,13 @@ public class StscImporter
         }
         catch (URISyntaxException syntax)
         {
-                return null;
+            return null;
         }
     }
 
     //workaround for Sun bug # 4723726
     public static URI resolve(URI base, String child)
-        throws URISyntaxException
+            throws URISyntaxException
     {
         URI childUri = new URI(child);
         URI ruri = base.resolve(childUri);
@@ -270,28 +269,12 @@ public class StscImporter
         // to this ourselves to make sure that the nested jar url gets
         // resolved correctly
         if (childUri.equals(ruri) && !childUri.isAbsolute() &&
-          (base.getScheme().equals("jar") || base.getScheme().equals("zip"))) {
+            (base.getScheme().equals("jar") || base.getScheme().equals("zip"))) {
             String r = base.toString();
             int lastslash = r.lastIndexOf('/');
             r = r.substring(0,lastslash) + "/" + childUri;
-            // Sun's implementation of URI doesn't support references to the
-            // parent directory ("/..") in the part after "!/" so we have to
-            // remove these ourselves
-            int exclPointSlashIndex = r.lastIndexOf("!/");
-            if (exclPointSlashIndex > 0)
-            {
-                int slashDotDotIndex = r.indexOf("/..", exclPointSlashIndex);
-                while (slashDotDotIndex > 0)
-                {
-                    int prevSlashIndex = r.lastIndexOf("/", slashDotDotIndex - 1);
-                    if (prevSlashIndex >= exclPointSlashIndex)
-                    {
-                        String temp = r.substring(slashDotDotIndex + 3);
-                        r = r.substring(0, prevSlashIndex).concat(temp);
-                    }
-                    slashDotDotIndex = r.indexOf("/..", exclPointSlashIndex);
-                }
-            }
+            r = resolveRelativePathInArchives(r);
+
             return URI.create(r);
         }
 
@@ -310,6 +293,29 @@ public class StscImporter
             }
         }
         return ruri;
+    }
+
+    public static String resolveRelativePathInArchives(String r)
+    {
+        // Sun's implementation of URI doesn't support references to the
+        // parent directory ("/..") in the part after "!/" so we have to
+        // remove these ourselves
+        int exclPointSlashIndex = r.lastIndexOf("!/");
+        if (exclPointSlashIndex > 0)
+        {
+            int slashDotDotIndex = r.indexOf("/..", exclPointSlashIndex);
+            while (slashDotDotIndex > 0)
+            {
+                int prevSlashIndex = r.lastIndexOf("/", slashDotDotIndex - 1);
+                if (prevSlashIndex >= exclPointSlashIndex)
+                {
+                    String temp = r.substring(slashDotDotIndex + 3);
+                    r = r.substring(0, prevSlashIndex).concat(temp);
+                }
+                slashDotDotIndex = r.indexOf("/..", exclPointSlashIndex);
+            }
+        }
+        return r;
     }
 
     public static class DownloadTable
@@ -407,9 +413,9 @@ public class StscImporter
             // no location URL provided?  Then nothing to do.
             if (locationURL == null)
                 return null;
-            
+
             StscState state = StscState.get();
-            
+
             // First resolve relative URLs with respect to base URL for doc
             URI baseURI = parseURI(baseURLForDoc(referencedBy));
             String absoluteURL = null;
@@ -543,12 +549,14 @@ public class StscImporter
             addFailedDownload(absoluteURL);
             return null;
         }
-        
+
         static XmlObject downloadDocument(SchemaTypeLoader loader, String namespace, String absoluteURL)
                 throws MalformedURLException, IOException, XmlException
         {
+
+            absoluteURL = resolveRelativePathInArchives(absoluteURL);
             StscState state = StscState.get();
-            
+
             EntityResolver resolver = state.getEntityResolver();
             if (resolver != null)
             {
@@ -576,7 +584,7 @@ public class StscImporter
                         options.setDocumentSourceName(absoluteURL);
                         return loader.parse(reader, null, options);
                     }
-                
+
                     // second preference for InputSource contract: 
                     InputStream bytes = source.getByteStream();
                     if (bytes != null)
@@ -591,7 +599,7 @@ public class StscImporter
                             options.setCharacterEncoding(encoding);
                         return loader.parse(bytes, null, options);
                     }
-                
+
                     // third preference: use the (possibly redirected) url
                     String urlToLoad = source.getSystemId();
                     if (urlToLoad == null)
@@ -776,7 +784,7 @@ public class StscImporter
                             // if download fails, an error has already been reported.
                             if (imported == null)
                                 continue;
-    
+
                             if (!nullableStringsMatch(imported.getTargetNamespace(), imports[i].getNamespace()))
                             {
                                 StscState.get().error("Imported schema has a target namespace \"" + imported.getTargetNamespace() + "\" that does not match the specified \"" + imports[i].getNamespace() + "\"", XmlErrorCodes.MISMATCHED_TARGET_NAMESPACE, imports[i]);
@@ -787,21 +795,21 @@ public class StscImporter
                             }
                         }
                     }
-                    
+
                     {
                         // handle includes
                         Include[] includes = stp.getSchema().getIncludeArray();
                         String sourceNamespace = stp.getChameleonNamespace();
                         if (sourceNamespace == null)
                             sourceNamespace = emptyStringIfNull(stp.getSchema().getTargetNamespace());
-    
+
                         for (int i = 0; i < includes.length; i++)
                         {
                             Schema included = downloadSchema(includes[i], null, includes[i].getSchemaLocation());
                             // if download fails, an error has already been reported.
                             if (included == null)
                                 continue;
-    
+
                             if (emptyStringIfNull(included.getTargetNamespace()).equals(sourceNamespace))
                             {
                                 // non-chameleon case - just like an import
@@ -822,7 +830,7 @@ public class StscImporter
                             }
                         }
                     }
-                    
+
                     {
                         // handle redefines
                         Redefine[] redefines = stp.getSchema().getRedefineArray();
@@ -835,7 +843,7 @@ public class StscImporter
                             // if download fails, an error has already been reported.
                             if (redefined == null)
                                 continue;
-    
+
                             if (emptyStringIfNull(redefined.getTargetNamespace()).equals(sourceNamespace))
                             {
                                 // non-chameleon case
