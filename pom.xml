@@ -78,6 +78,14 @@
         </plugins>
     </build>
 
+    <dependencies>
+        <dependency>
+            <groupId>stax</groupId>
+            <artifactId>stax-api</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+    </dependencies>
+
     <distributionManagement>
         <repository>
             <id>mule-releases</id>
