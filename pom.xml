@@ -78,6 +78,13 @@
         </plugins>
     </build>
 
+    <scm>
+        <connection>scm:git:git@github.com:mulesoft/xmlbeans.git</connection>
+        <url>scm:git:git@github.com:mulesoft/xmlbeans.git</url>
+        <developerConnection>scm:git:git@github.com:mulesoft/xmlbeans.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
     <dependencies>
         <dependency>
             <groupId>stax</groupId>
