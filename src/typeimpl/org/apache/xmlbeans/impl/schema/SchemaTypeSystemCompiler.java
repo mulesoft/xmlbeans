@@ -37,6 +37,7 @@ import java.net.URI;
 
 import org.apache.xmlbeans.impl.xb.xsdschema.SchemaDocument.Schema;
 import org.apache.xmlbeans.impl.xb.xsdschema.SchemaDocument;
+import org.apache.xmlbeans.impl.common.HttpRetriever;
 import org.apache.xmlbeans.impl.common.XmlErrorWatcher;
 
 import java.util.Collection;
@@ -178,10 +179,17 @@ public class SchemaTypeSystemCompiler
      */
     public static SchemaTypeSystem compile(Parameters params)
     {
+        return compile(params, null);
+    }
+    /**
+     * Compiles a SchemaTypeSystem.  Use XmlBeans.compileXmlBeans() if you can.
+     */
+    public static SchemaTypeSystem compile(Parameters params, HttpRetriever retriever)
+    {
         return compileImpl(params.getExistingTypeSystem(), params.getName(),
             params.getSchemas(), params.getConfig(), params.getLinkTo(),
             params.getOptions(), params.getErrorListener(), params.isJavaize(),
-            params.getBaseURI(), params.getSourcesToCopyMap(), params.getSchemasDir());
+            params.getBaseURI(), params.getSourcesToCopyMap(), params.getSchemasDir(), retriever);
     }
 
     /**
@@ -194,6 +202,20 @@ public class SchemaTypeSystemCompiler
      */
     public static SchemaTypeSystemImpl compile(String name, SchemaTypeSystem existingSTS,
         XmlObject[] input, BindingConfig config, SchemaTypeLoader linkTo, Filer filer, XmlOptions options)
+        throws XmlException
+    {
+        return compile(name, existingSTS, input, config, linkTo, filer, options, null);
+    }
+    /**
+     * Please do not invoke this method directly as the signature could change unexpectedly.
+     * Use one of
+     * {@link XmlBeans#loadXsd(XmlObject[])},
+     * {@link XmlBeans#compileXsd(XmlObject[], SchemaTypeLoader, XmlOptions)},
+     * or
+     * {@link XmlBeans#compileXmlBeans(String, SchemaTypeSystem, XmlObject[], BindingConfig, SchemaTypeLoader, Filer, XmlOptions)}
+     */
+    public static SchemaTypeSystemImpl compile(String name, SchemaTypeSystem existingSTS,
+        XmlObject[] input, BindingConfig config, SchemaTypeLoader linkTo, Filer filer, XmlOptions options, HttpRetriever retriever)
         throws XmlException
     {
         options = XmlOptions.maskNull(options);
@@ -218,7 +240,7 @@ public class SchemaTypeSystemCompiler
         SchemaTypeSystemImpl stsi = compileImpl(existingSTS, name,
             (Schema[])schemas.toArray(new Schema[schemas.size()]),
             config, linkTo, options, errorWatcher, filer!=null, (URI) options.get(XmlOptions.BASE_URI),
-            null, null);
+            null, null, retriever);
 
         // if there is an error and compile didn't recover (stsi==null), throw exception
         if (errorWatcher.hasError() && stsi == null)
@@ -235,13 +257,20 @@ public class SchemaTypeSystemCompiler
         return stsi;
     }
 
+    static SchemaTypeSystemImpl compileImpl( SchemaTypeSystem system, String name,
+                                                           Schema[] schemas, BindingConfig config, SchemaTypeLoader linkTo,
+                                                           XmlOptions options, Collection outsideErrors, boolean javaize,
+                                                           URI baseURI, Map sourcesToCopyMap, File schemasDir) {
+        return compileImpl(system, name, schemas, config, linkTo, options, outsideErrors, javaize, baseURI, sourcesToCopyMap, schemasDir, null);
+    }
+
     //
     // Compiles a SchemaTypeSystem
     //
     /* package */ static SchemaTypeSystemImpl compileImpl( SchemaTypeSystem system, String name,
         Schema[] schemas, BindingConfig config, SchemaTypeLoader linkTo,
         XmlOptions options, Collection outsideErrors, boolean javaize,
-        URI baseURI, Map sourcesToCopyMap, File schemasDir)
+        URI baseURI, Map sourcesToCopyMap, File schemasDir, HttpRetriever retriever)
     {
         if (linkTo == null)
             throw new IllegalArgumentException("Must supply linkTo");
@@ -299,7 +328,7 @@ public class SchemaTypeSystemCompiler
             }
 
             // deal with imports and includes
-            StscImporter.SchemaToProcess[] schemasAndChameleons = StscImporter.resolveImportsAndIncludes(startWith, incremental);
+            StscImporter.SchemaToProcess[] schemasAndChameleons = StscImporter.resolveImportsAndIncludes(startWith, incremental, retriever);
 
             // call the translator so that it may also perform magic
             StscTranslator.addAllDefinitions(schemasAndChameleons);
