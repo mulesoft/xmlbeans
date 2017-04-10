@@ -63,6 +63,9 @@ import org.apache.xmlbeans.xml.stream.XMLStreamException;
 
 public abstract class SchemaTypeLoaderBase implements SchemaTypeLoader
 {
+    private static final String HTTP = "http://";
+    private static final String HTTPS = "https://";
+
     private static final String USER_AGENT = "XMLBeans/" + XmlBeans.getVersion() + " (" + XmlBeans.getTitle() + ")";
 
     private static final Method _pathCompiler = getMethod( "org.apache.xmlbeans.impl.store.Path", "compilePath", new Class[] { String.class, XmlOptions.class } );
@@ -278,7 +281,7 @@ public abstract class SchemaTypeLoaderBase implements SchemaTypeLoader
             options.put( XmlOptions.DOCUMENT_SOURCE_NAME, url.toString() );
         }
         
-        if (url.toString().startsWith("http") && retriever != null)
+        if (isHttpRequest(url) && retriever != null)
         {
             InputStream stream;
             try
@@ -294,6 +297,11 @@ public abstract class SchemaTypeLoaderBase implements SchemaTypeLoader
 
         
         return retrieve(url, type, options);
+    }
+
+    private boolean isHttpRequest(URL url)
+    {
+        return url.toString().startsWith(HTTP) || url.toString().startsWith(HTTPS);
     }
 
     private XmlObject retrieve(URL url, SchemaType type, XmlOptions options) throws IOException, MalformedURLException, XmlException
