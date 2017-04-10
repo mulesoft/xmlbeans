@@ -16,6 +16,8 @@
 package org.apache.xmlbeans;
 
 import javax.xml.namespace.QName;
+
+import org.apache.xmlbeans.impl.common.HttpRetriever;
 import org.apache.xmlbeans.xml.stream.XMLInputStream;
 import org.apache.xmlbeans.xml.stream.XMLStreamException;
 
@@ -162,4 +164,6 @@ public interface SchemaTypeLoader
      * @deprecated Deprecated by XMLStreamReader from STaX - jsr173 API.
      */
     public XMLInputStream newValidatingXMLInputStream ( XMLInputStream xis, SchemaType type, XmlOptions options ) throws XmlException, XMLStreamException;
+
+    public XmlObject parse(URL url, SchemaType type, XmlOptions options, HttpRetriever retriever) throws XmlException, IOException;
 }
