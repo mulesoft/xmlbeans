@@ -15,6 +15,7 @@
 
 package org.apache.xmlbeans.impl.schema;
 
+import org.apache.xmlbeans.impl.common.HttpRetriever;
 import org.apache.xmlbeans.impl.common.QNameHelper;
 import org.apache.xmlbeans.impl.validator.ValidatingXMLInputStream;
 
@@ -46,6 +47,7 @@ import java.util.ArrayList;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -257,7 +259,12 @@ public abstract class SchemaTypeLoaderBase implements SchemaTypeLoader
         }
     }
 
-    public XmlObject parse ( URL url, SchemaType type, XmlOptions options ) throws XmlException, IOException
+    public XmlObject parse(URL url, SchemaType type, XmlOptions options) throws XmlException, IOException
+    {
+        return parse(url, type, options, null);
+    }
+
+    public XmlObject parse(URL url, SchemaType type, XmlOptions options, HttpRetriever retriever) throws XmlException, IOException
     {
         if (options == null)
         {
@@ -270,7 +277,27 @@ public abstract class SchemaTypeLoaderBase implements SchemaTypeLoader
             options = new XmlOptions( options );
             options.put( XmlOptions.DOCUMENT_SOURCE_NAME, url.toString() );
         }
+        
+        if (url.toString().startsWith("http") && retriever != null)
+        {
+            InputStream stream;
+            try
+            {
+                stream = retriever.getStreamFrom(url.toString());
+            }
+            catch (Exception e)
+            {
+                throw new XmlException("Error retrieving resource from URL: " + url.toString(), e);
+            }
+            return parse(stream, type, options);
+        }
 
+        
+        return retrieve(url, type, options);
+    }
+
+    private XmlObject retrieve(URL url, SchemaType type, XmlOptions options) throws IOException, MalformedURLException, XmlException
+    {
         URLConnection conn = null;
         InputStream stream = null;
         download: try
