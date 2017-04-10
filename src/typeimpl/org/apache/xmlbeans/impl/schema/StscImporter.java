@@ -46,6 +46,7 @@ import org.apache.xmlbeans.XmlErrorCodes;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
 import org.apache.xmlbeans.XmlOptions;
+import org.apache.xmlbeans.impl.common.HttpRetriever;
 import org.apache.xmlbeans.impl.common.IOUtil;
 import org.apache.xmlbeans.impl.common.XmlEncodingSniffer;
 import org.apache.xmlbeans.impl.xb.xsdschema.ImportDocument.Import;
@@ -61,7 +62,12 @@ public class StscImporter
 {
     public static SchemaToProcess[] resolveImportsAndIncludes(Schema[] startWith, boolean forceSrcSave)
     {
-        DownloadTable engine = new DownloadTable(startWith);
+        return resolveImportsAndIncludes(startWith, forceSrcSave, null);
+    }
+
+    public static SchemaToProcess[] resolveImportsAndIncludes(Schema[] startWith, boolean forceSrcSave, HttpRetriever retriever)
+    {
+        DownloadTable engine = new DownloadTable(startWith, retriever);
         return engine.resolveImportsAndIncludes(forceSrcSave);
     }
 
@@ -320,6 +326,8 @@ public class StscImporter
 
     public static class DownloadTable
     {
+        private HttpRetriever retriever;
+
         /**
          * Namespace/schemaLocation pair.
          *
@@ -499,7 +507,7 @@ public class StscImporter
             // try to download
             download: try
             {
-                XmlObject xdoc = downloadDocument(state.getS4SLoader(), targetNamespace, absoluteURL);
+                XmlObject xdoc = downloadDocument(state.getS4SLoader(), targetNamespace, absoluteURL, retriever);
 
                 Schema result = findMatchByDigest(xdoc);
                 String shortname = state.relativize(absoluteURL);
@@ -549,8 +557,14 @@ public class StscImporter
             addFailedDownload(absoluteURL);
             return null;
         }
-
+        
         static XmlObject downloadDocument(SchemaTypeLoader loader, String namespace, String absoluteURL)
+                throws MalformedURLException, IOException, XmlException
+        {
+            return downloadDocument(loader, namespace, absoluteURL, null);
+        }
+
+        static XmlObject downloadDocument(SchemaTypeLoader loader, String namespace, String absoluteURL, HttpRetriever retriever)
                 throws MalformedURLException, IOException, XmlException
         {
 
@@ -611,7 +625,7 @@ public class StscImporter
                     options.setLoadMessageDigest();
                     options.setDocumentSourceName(absoluteURL);
                     URL urlDownload = new URL(urlToLoad);
-                    return loader.parse(urlDownload, null, options);
+                    return loader.parse(urlDownload, null, options, retriever);
                 }
             }
 
@@ -624,7 +638,7 @@ public class StscImporter
             options.setLoadMessageDigest();
             URL urlDownload = new URL(absoluteURL);
 
-            return loader.parse(urlDownload, null, options);
+            return loader.parse(urlDownload, null, options, retriever);
         }
 
         private void addSuccessfulDownload(NsLocPair key, Schema schema)
@@ -734,9 +748,15 @@ public class StscImporter
             SchemaToProcess next = (SchemaToProcess)scanNeeded.removeFirst();
             return next;
         }
+        
+        public DownloadTable(Schema[] startWith) {
+            this(startWith, null);
+        }
 
-        public DownloadTable(Schema[] startWith)
+        public DownloadTable(Schema[] startWith, HttpRetriever retriever)
         {
+            this.retriever = retriever;
+            
             for (int i = 0; i < startWith.length; i++)
             {
                 String targetNamespace = startWith[i].getTargetNamespace();
