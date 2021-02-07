@@ -2,7 +2,11 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>xmlbeans</artifactId>
     <groupId>org.mulesoft.xmlbeans</groupId>
-    <version>2.6.4-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
     <build>
         <defaultGoal>compile</defaultGoal>
@@ -20,7 +24,8 @@
                         </goals>
                         <configuration>
                             <arguments>
-                                <argument>deploy</argument>
+                                <argument>package</argument>
+                                <argument>-Dversion.base=${project.version}</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -33,7 +38,8 @@
                         </goals>
                         <configuration>
                             <arguments>
-                                <argument>checkintest</argument>
+                                <argument>test</argument>
+                                <argument>-Dversion.base="${project.version}</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -47,6 +53,7 @@
                         <configuration>
                             <arguments>
                                 <argument>clean</argument>
+                                <argument>-Dversion.base="${project.version}</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -75,7 +82,7 @@
                         </goals>
                         <configuration>
                             <target>
-                                <copy file="build/lib/xbean.jar" tofile="${basedir}/target/${project.artifactId}-${project.version}.jar" overwrite="true" />
+                                <copy file="build/xmlbeans-${project.version}.jar" tofile="${basedir}/target/${project.artifactId}-${project.version}.jar" overwrite="true" />
                             </target>
                         </configuration>
                     </execution>
